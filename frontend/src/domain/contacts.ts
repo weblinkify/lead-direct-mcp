@@ -5,6 +5,10 @@ export const GENERIC_LOCALS = new Set([
   'enquiries', 'inquiries', 'enquiry', 'inquiry', 'mail', 'team', 'help', 'orders', 'order', 'billing',
   'accounts', 'marketing', 'press', 'media', 'careers', 'jobs', 'hr', 'webmaster', 'export', 'kontakt',
   'iletisim', 'bilgi', 'satis', 'contacto', 'ventas',
+  // sales / office / service in other languages
+  'ventes', 'commercial', 'accueil', 'atelier', 'devis', 'vertrieb', 'verkauf', 'buero', 'zentrale',
+  'myynti', 'asiakaspalvelu', 'toimisto', 'tilaukset', 'muhasebe', 'destek', 'satinalma', 'comercial',
+  'vendite', 'verkoop', 'salg', 'forsaljning', 'kundtjanst', 'kundeservice', 'biuro', 'sprzedaz',
 ]);
 
 const EMAIL_RE = /(?<![\w.+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,24}(?![\w-])/g;

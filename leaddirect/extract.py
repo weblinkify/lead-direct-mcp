@@ -27,6 +27,10 @@ GENERIC_LOCALS = {
     "enquiries", "inquiries", "enquiry", "inquiry", "mail", "team", "help", "orders", "order", "billing",
     "accounts", "marketing", "press", "media", "careers", "jobs", "hr", "webmaster", "export", "kontakt",
     "iletisim", "bilgi", "satis", "contacto", "ventas",
+    # sales / office / service in other languages
+    "ventes", "commercial", "accueil", "atelier", "devis", "vertrieb", "verkauf", "buero", "zentrale",
+    "myynti", "asiakaspalvelu", "toimisto", "tilaukset", "muhasebe", "destek", "satinalma", "comercial",
+    "vendite", "verkoop", "salg", "forsaljning", "kundtjanst", "kundeservice", "biuro", "sprzedaz",
 }
 
 SOCIAL_HOSTS = {

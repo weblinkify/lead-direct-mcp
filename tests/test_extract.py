@@ -26,6 +26,7 @@ def test_plausibility_filters_assets_and_placeholders():
 
 def test_generic_detection():
     assert is_generic("info@acme.fi") and is_generic("sales.eu@acme.fi") and is_generic("iletisim@firma.com.tr")
+    assert is_generic("ventes@acme.fr") and is_generic("myynti@acme.fi") and is_generic("vertrieb@acme.de")
     assert not is_generic("anna.virtanen@acme.fi")
 
 

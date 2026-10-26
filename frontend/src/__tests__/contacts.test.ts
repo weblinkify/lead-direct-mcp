@@ -18,6 +18,7 @@ describe('contacts (mirrors tests/test_extract.py)', () => {
 
   it('detects shared inboxes', () => {
     expect(isGeneric('sales.eu@acme.fi')).toBe(true);
+    expect(isGeneric('ventes@acme.fr') && isGeneric('myynti@acme.fi') && isGeneric('atelier@acme.fr')).toBe(true);
     expect(isGeneric('anna.virtanen@acme.fi')).toBe(false);
   });
 
