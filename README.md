@@ -1,6 +1,6 @@
 # LeadDirect MCP
 
-**Live demo:** https://lead-direct-mcp.vercel.app (mock mode, runs fully in the browser)
+**Live demo:** https://lead-direct-mcp.vercel.app (mock mode, runs fully in the browser) · deploys automatically on every push to `main`
 
 An MCP server for B2B prospecting from Claude Desktop, Cursor or any MCP client. Describe the companies
 you want ("lowbed semi-trailer dealers in France, skip the big brands") and LeadDirect searches the web,
