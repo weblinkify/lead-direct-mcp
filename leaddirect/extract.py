@@ -4,33 +4,116 @@ and social profile links. No network access; covered by tests/test_extract.py.""
 from __future__ import annotations
 
 import re
-from typing import Iterable, Optional
+from collections.abc import Iterable
 from urllib.parse import unquote, urlparse
 
 import phonenumbers
 from bs4 import BeautifulSoup
 
-EMAIL_RE = re.compile(r"(?<![\w.+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,24}(?![\w-])")
+EMAIL_RE = re.compile(
+    r"(?<![\w.+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,24}(?![\w-])"
+)
 
 # Things that look like emails but are not: asset names (logo@2x.png), placeholders, tracking hosts.
 _ASSET_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".avif", ".css", ".js", ".ico")
-_JUNK_DOMAINS = ("example.com", "example.org", "domain.com", "email.com", "yourdomain.com", "sentry.io",
-                 "wixpress.com", "sentry-next.wixpress.com", "godaddy.com")
-_JUNK_LOCALS = ("noreply", "no-reply", "donotreply", "do-not-reply", "user", "name", "your", "youremail",
-                # "firstname.lastname" placeholders used to explain an address pattern
-                "firstname.lastname", "first.last", "fornavn.etternavn", "fornamn.efternamn", "etunimi.sukunimi",
-                "vorname.nachname", "prenom.nom", "nombre.apellido", "nome.cognome", "voornaam.achternaam",
-                "ad.soyad", "isim.soyisim", "imie.nazwisko")
+_JUNK_DOMAINS = (
+    "example.com",
+    "example.org",
+    "domain.com",
+    "email.com",
+    "yourdomain.com",
+    "sentry.io",
+    "wixpress.com",
+    "sentry-next.wixpress.com",
+    "godaddy.com",
+)
+_JUNK_LOCALS = (
+    "noreply",
+    "no-reply",
+    "donotreply",
+    "do-not-reply",
+    "user",
+    "name",
+    "your",
+    "youremail",
+    # "firstname.lastname" placeholders used to explain an address pattern
+    "firstname.lastname",
+    "first.last",
+    "fornavn.etternavn",
+    "fornamn.efternamn",
+    "etunimi.sukunimi",
+    "vorname.nachname",
+    "prenom.nom",
+    "nombre.apellido",
+    "nome.cognome",
+    "voornaam.achternaam",
+    "ad.soyad",
+    "isim.soyisim",
+    "imie.nazwisko",
+)
 
 GENERIC_LOCALS = {
-    "info", "contact", "hello", "hi", "sales", "office", "support", "admin", "service", "services",
-    "enquiries", "inquiries", "enquiry", "inquiry", "mail", "team", "help", "orders", "order", "billing",
-    "accounts", "marketing", "press", "media", "careers", "jobs", "hr", "webmaster", "export", "kontakt",
-    "iletisim", "bilgi", "satis", "contacto", "ventas",
+    "info",
+    "contact",
+    "hello",
+    "hi",
+    "sales",
+    "office",
+    "support",
+    "admin",
+    "service",
+    "services",
+    "enquiries",
+    "inquiries",
+    "enquiry",
+    "inquiry",
+    "mail",
+    "team",
+    "help",
+    "orders",
+    "order",
+    "billing",
+    "accounts",
+    "marketing",
+    "press",
+    "media",
+    "careers",
+    "jobs",
+    "hr",
+    "webmaster",
+    "export",
+    "kontakt",
+    "iletisim",
+    "bilgi",
+    "satis",
+    "contacto",
+    "ventas",
     # sales / office / service in other languages
-    "ventes", "commercial", "accueil", "atelier", "devis", "vertrieb", "verkauf", "buero", "zentrale",
-    "myynti", "asiakaspalvelu", "toimisto", "tilaukset", "muhasebe", "destek", "satinalma", "comercial",
-    "vendite", "verkoop", "salg", "forsaljning", "kundtjanst", "kundeservice", "biuro", "sprzedaz",
+    "ventes",
+    "commercial",
+    "accueil",
+    "atelier",
+    "devis",
+    "vertrieb",
+    "verkauf",
+    "buero",
+    "zentrale",
+    "myynti",
+    "asiakaspalvelu",
+    "toimisto",
+    "tilaukset",
+    "muhasebe",
+    "destek",
+    "satinalma",
+    "comercial",
+    "vendite",
+    "verkoop",
+    "salg",
+    "forsaljning",
+    "kundtjanst",
+    "kundeservice",
+    "biuro",
+    "sprzedaz",
 }
 
 SOCIAL_HOSTS = {
@@ -48,7 +131,7 @@ def decode_cf_email(encoded: str) -> str:
     if len(encoded) < 4 or len(encoded) % 2 or not re.fullmatch(r"[0-9a-fA-F]+", encoded):
         raise ValueError("not a Cloudflare-encoded email")
     key = int(encoded[:2], 16)
-    return "".join(chr(int(encoded[i:i + 2], 16) ^ key) for i in range(2, len(encoded), 2))
+    return "".join(chr(int(encoded[i : i + 2], 16) ^ key) for i in range(2, len(encoded), 2))
 
 
 def encode_cf_email(email: str, key: int = 0x5A) -> str:
@@ -84,7 +167,7 @@ def extract_emails(html: str) -> dict[str, list[str]]:
     soup = BeautifulSoup(html, "html.parser")
     plain: list[str] = []
     for a in soup.select("a[href^='mailto:' i]"):
-        target = unquote(a["href"].split(":", 1)[1].split("?", 1)[0])
+        target = unquote(str(a["href"]).split(":", 1)[1].split("?", 1)[0])
         plain.extend(e.strip() for e in target.split(","))
     plain.extend(EMAIL_RE.findall(soup.get_text(" ")))
     for tag in soup.find_all(True):
@@ -96,27 +179,35 @@ def extract_emails(html: str) -> dict[str, list[str]]:
     cloudflare: list[str] = []
     for tag in soup.select("[data-cfemail]"):
         try:
-            cloudflare.append(decode_cf_email(tag["data-cfemail"]))
+            cloudflare.append(decode_cf_email(str(tag["data-cfemail"])))
         except ValueError:
             pass
     for a in soup.select("a[href*='/cdn-cgi/l/email-protection#']"):
         try:
-            cloudflare.append(decode_cf_email(a["href"].split("#", 1)[1]))
+            cloudflare.append(decode_cf_email(str(a["href"]).split("#", 1)[1]))
         except ValueError:
             pass
 
-    clean = lambda xs: _dedupe(e.lower() for e in xs if is_plausible_email(e))  # noqa: E731
+    def clean(emails: list[str]) -> list[str]:
+        return _dedupe(e.lower() for e in emails if is_plausible_email(e))
+
     cf = clean(cloudflare)
     return {"plain": [e for e in clean(plain) if e not in cf], "cloudflare": cf}
 
 
-def extract_phones(text: str, region: Optional[str] = None) -> list[str]:
+def extract_phones(text: str, region: str | None = None) -> list[str]:
     """International-format phone numbers. ``region`` (ISO alpha-2, e.g. "FI") lets national numbers parse."""
     region = region.upper() if region and len(region) == 2 else None
     found = []
     try:
-        for match in phonenumbers.PhoneNumberMatcher(text, region, leniency=phonenumbers.Leniency.VALID):
-            found.append(phonenumbers.format_number(match.number, phonenumbers.PhoneNumberFormat.INTERNATIONAL))
+        for match in phonenumbers.PhoneNumberMatcher(
+            text, region, leniency=phonenumbers.Leniency.VALID
+        ):
+            found.append(
+                phonenumbers.format_number(
+                    match.number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+                )
+            )
     except Exception:  # phonenumbers raises on pathological input; contacts are best-effort
         pass
     return _dedupe(found)
@@ -127,7 +218,7 @@ def extract_socials(html: str) -> dict[str, str]:
     soup = BeautifulSoup(html, "html.parser")
     socials: dict[str, str] = {}
     for a in soup.select("a[href]"):
-        href = a["href"].strip()
+        href = str(a["href"]).strip()
         try:
             parsed = urlparse(href)
         except ValueError:
@@ -155,7 +246,7 @@ def registrable_domain(url_or_domain: str) -> str:
     return host.removeprefix("www.")
 
 
-def guess_region(domain: str) -> Optional[str]:
+def guess_region(domain: str) -> str | None:
     tld = domain.rsplit(".", 1)[-1].upper()
     if tld == "UK":
         return "GB"

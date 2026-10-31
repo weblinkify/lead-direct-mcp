@@ -4,26 +4,72 @@ on its own site (contact, about, imprint pages)."""
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 from urllib.parse import urljoin
 
 import httpx
 from bs4 import BeautifulSoup
 
-from .extract import extract_emails, extract_phones, extract_socials, guess_region, is_generic, registrable_domain
+from .extract import (
+    extract_emails,
+    extract_phones,
+    extract_socials,
+    guess_region,
+    is_generic,
+    registrable_domain,
+)
 
-USER_AGENT = "Mozilla/5.0 (compatible; LeadDirect/1.0; +https://github.com/weblinkify/lead-direct-mcp)"
-CONTACT_PATHS = ("", "/contact", "/contact-us", "/about", "/about-us", "/impressum", "/imprint", "/iletisim",
-                 "/kontakt", "/contacto")
+USER_AGENT = (
+    "Mozilla/5.0 (compatible; LeadDirect/1.0; +https://github.com/weblinkify/lead-direct-mcp)"
+)
+CONTACT_PATHS = (
+    "",
+    "/contact",
+    "/contact-us",
+    "/about",
+    "/about-us",
+    "/impressum",
+    "/imprint",
+    "/iletisim",
+    "/kontakt",
+    "/contacto",
+)
 MAX_PAGES = 6
 
 # Directories, marketplaces, social networks and media: not company sites.
 IGNORED_DOMAINS = (
-    "linkedin.com", "facebook.com", "instagram.com", "twitter.com", "x.com", "youtube.com", "tiktok.com",
-    "pinterest.com", "wikipedia.org", "reddit.com", "quora.com", "medium.com", "amazon.", "ebay.",
-    "alibaba.com", "aliexpress.com", "yelp.", "yellowpages", "europages.", "kompass.com", "crunchbase.com",
-    "zoominfo.com", "bloomberg.com", "glassdoor.", "indeed.", "trustpilot.com", "google.", "bing.com",
-    "duckduckgo.com", "apple.com", "github.com",
+    "linkedin.com",
+    "facebook.com",
+    "instagram.com",
+    "twitter.com",
+    "x.com",
+    "youtube.com",
+    "tiktok.com",
+    "pinterest.com",
+    "wikipedia.org",
+    "reddit.com",
+    "quora.com",
+    "medium.com",
+    "amazon.",
+    "ebay.",
+    "alibaba.com",
+    "aliexpress.com",
+    "yelp.",
+    "yellowpages",
+    "europages.",
+    "kompass.com",
+    "crunchbase.com",
+    "zoominfo.com",
+    "bloomberg.com",
+    "glassdoor.",
+    "indeed.",
+    "trustpilot.com",
+    "google.",
+    "bing.com",
+    "duckduckgo.com",
+    "apple.com",
+    "github.com",
 )
 
 
@@ -38,7 +84,9 @@ def is_ignored(domain: str, extra: Iterable[str] = ()) -> bool:
     return False
 
 
-def search_companies(query: str, max_results: int = 30, exclude: Iterable[str] = ()) -> list[dict[str, str]]:
+def search_companies(
+    query: str, max_results: int = 30, exclude: Iterable[str] = ()
+) -> list[dict[str, str]]:
     """Web search, one result per company domain, skipping directories and excluded domains."""
     from ddgs import DDGS  # slow import; only needed here
 
@@ -50,9 +98,14 @@ def search_companies(query: str, max_results: int = 30, exclude: Iterable[str] =
         if not domain or domain in seen or is_ignored(domain, exclude):
             continue
         seen.add(domain)
-        out.append({"company": (item.get("title") or domain).split(" | ")[0].split(" - ")[0].strip(),
-                    "domain": domain, "url": item.get("href") or f"https://{domain}",
-                    "snippet": item.get("body") or ""})
+        out.append(
+            {
+                "company": (item.get("title") or domain).split(" | ")[0].split(" - ")[0].strip(),
+                "domain": domain,
+                "url": item.get("href") or f"https://{domain}",
+                "snippet": item.get("body") or "",
+            }
+        )
     return out
 
 
@@ -62,7 +115,7 @@ def internal_contact_links(html: str, base_url: str, domain: str) -> list[str]:
     keywords = ("contact", "about", "impressum", "imprint", "iletisim", "kontakt", "team")
     links = []
     for a in soup.select("a[href]"):
-        href = urljoin(base_url, a["href"])
+        href = urljoin(base_url, str(a["href"]))
         if registrable_domain(href) != domain:
             continue
         text = f"{a.get_text(' ').lower()} {href.lower()}"
@@ -71,7 +124,9 @@ def internal_contact_links(html: str, base_url: str, domain: str) -> list[str]:
     return list(dict.fromkeys(links))
 
 
-async def crawl_company(client: httpx.AsyncClient, url_or_domain: str, region: Optional[str] = None) -> dict[str, Any]:
+async def crawl_company(
+    client: httpx.AsyncClient, url_or_domain: str, region: str | None = None
+) -> dict[str, Any]:
     domain = registrable_domain(url_or_domain)
     if not domain:
         return {"domain": url_or_domain, "status": "invalid_domain"}
@@ -126,14 +181,20 @@ async def crawl_company(client: httpx.AsyncClient, url_or_domain: str, region: O
     }
 
 
-async def crawl_many(domains: list[str], region: Optional[str] = None, concurrency: int = 4) -> list[dict[str, Any]]:
+async def crawl_many(
+    domains: list[str], region: str | None = None, concurrency: int = 4
+) -> list[dict[str, Any]]:
     sem = asyncio.Semaphore(concurrency)
     async with http_client() as client:
+
         async def one(d: str) -> dict[str, Any]:
             async with sem:
                 return await crawl_company(client, d, region)
+
         return await asyncio.gather(*(one(d) for d in domains))
 
 
 def http_client() -> httpx.AsyncClient:
-    return httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers={"User-Agent": USER_AGENT})
+    return httpx.AsyncClient(
+        timeout=10.0, follow_redirects=True, headers={"User-Agent": USER_AGENT}
+    )

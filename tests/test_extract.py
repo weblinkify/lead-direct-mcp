@@ -1,8 +1,16 @@
-from leaddirect.extract import (
-    decode_cf_email, encode_cf_email, extract_emails, extract_phones, extract_socials, guess_region,
-    is_generic, is_plausible_email, registrable_domain,
-)
 import pytest
+
+from leaddirect.extract import (
+    decode_cf_email,
+    encode_cf_email,
+    extract_emails,
+    extract_phones,
+    extract_socials,
+    guess_region,
+    is_generic,
+    is_plausible_email,
+    registrable_domain,
+)
 
 
 def test_cloudflare_roundtrip_and_known_value():
@@ -25,8 +33,16 @@ def test_plausibility_filters_assets_and_placeholders():
 
 
 def test_generic_detection():
-    assert is_generic("info@acme.fi") and is_generic("sales.eu@acme.fi") and is_generic("iletisim@firma.com.tr")
-    assert is_generic("ventes@acme.fr") and is_generic("myynti@acme.fi") and is_generic("vertrieb@acme.de")
+    assert (
+        is_generic("info@acme.fi")
+        and is_generic("sales.eu@acme.fi")
+        and is_generic("iletisim@firma.com.tr")
+    )
+    assert (
+        is_generic("ventes@acme.fr")
+        and is_generic("myynti@acme.fi")
+        and is_generic("vertrieb@acme.de")
+    )
     assert not is_generic("anna.virtanen@acme.fi")
 
 
@@ -37,13 +53,18 @@ def test_extract_emails_all_sources():
       <p>Write to info@trailers.fr or ventes@trailers.fr.</p>
       <img src="/img/logo@2x.png">
       <span class="__cf_email__" data-cfemail="{cf}">[email protected]</span>
-      <a href="/cdn-cgi/l/email-protection#{encode_cf_email('pierre@trailers.fr', 0x22)}">x</a>
+      <a href="/cdn-cgi/l/email-protection#{encode_cf_email("pierre@trailers.fr", 0x22)}">x</a>
       <a href="/cdn-cgi/l/email-protection#nothex">bad</a>
       <meta content="contact: press@trailers.fr">
     """
     out = extract_emails(html)
     assert out["cloudflare"] == ["export@trailers.fr", "pierre@trailers.fr"]
-    assert out["plain"] == ["jean.dupont@trailers.fr", "info@trailers.fr", "ventes@trailers.fr", "press@trailers.fr"]
+    assert out["plain"] == [
+        "jean.dupont@trailers.fr",
+        "info@trailers.fr",
+        "ventes@trailers.fr",
+        "press@trailers.fr",
+    ]
 
 
 def test_extract_phones_with_region():
@@ -63,12 +84,18 @@ def test_extract_socials_skips_share_links_and_bare_hosts():
       <a href="https://wa.me/358401234567">wa</a>
       <a href="https://twitter.com/intent/tweet?text=x">tweet</a>
     """
-    assert extract_socials(html) == {"facebook": "https://www.facebook.com/acmetrailers",
-                                     "linkedin": "https://linkedin.com/company/acme",
-                                     "whatsapp": "https://wa.me/358401234567"}
+    assert extract_socials(html) == {
+        "facebook": "https://www.facebook.com/acmetrailers",
+        "linkedin": "https://linkedin.com/company/acme",
+        "whatsapp": "https://wa.me/358401234567",
+    }
 
 
 def test_domain_helpers():
     assert registrable_domain("https://www.Acme.fi:443/contact?x=1") == "acme.fi"
     assert registrable_domain("acme.fi/about") == "acme.fi"
-    assert guess_region("acme.co.uk") == "GB" and guess_region("acme.fi") == "FI" and guess_region("acme.com") is None
+    assert (
+        guess_region("acme.co.uk") == "GB"
+        and guess_region("acme.fi") == "FI"
+        and guess_region("acme.com") is None
+    )

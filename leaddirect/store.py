@@ -7,8 +7,19 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-FIELDS = ["date", "company", "domain", "email", "other_emails", "phone", "linkedin", "facebook", "instagram",
-          "whatsapp", "query"]
+FIELDS = [
+    "date",
+    "company",
+    "domain",
+    "email",
+    "other_emails",
+    "phone",
+    "linkedin",
+    "facebook",
+    "instagram",
+    "whatsapp",
+    "query",
+]
 
 
 class LeadStore:
@@ -34,13 +45,21 @@ class LeadStore:
             known.add(lead["domain"])
             emails = lead.get("emails") or []
             socials = lead.get("socials") or {}
-            new_rows.append({
-                "date": date.today().isoformat(), "company": lead.get("company", ""), "domain": lead["domain"],
-                "email": emails[0] if emails else "", "other_emails": "; ".join(emails[1:4]),
-                "phone": (lead.get("phones") or [""])[0], "linkedin": socials.get("linkedin", ""),
-                "facebook": socials.get("facebook", ""), "instagram": socials.get("instagram", ""),
-                "whatsapp": socials.get("whatsapp", ""), "query": query,
-            })
+            new_rows.append(
+                {
+                    "date": date.today().isoformat(),
+                    "company": lead.get("company", ""),
+                    "domain": lead["domain"],
+                    "email": emails[0] if emails else "",
+                    "other_emails": "; ".join(emails[1:4]),
+                    "phone": (lead.get("phones") or [""])[0],
+                    "linkedin": socials.get("linkedin", ""),
+                    "facebook": socials.get("facebook", ""),
+                    "instagram": socials.get("instagram", ""),
+                    "whatsapp": socials.get("whatsapp", ""),
+                    "query": query,
+                }
+            )
         if new_rows:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             exists = self.path.exists()

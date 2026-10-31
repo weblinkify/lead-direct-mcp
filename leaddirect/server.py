@@ -6,7 +6,7 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from fastmcp import FastMCP
 
@@ -41,8 +41,13 @@ def _json(data: Any) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False)
 
 
-async def find_leads(query: str, target_leads: int = 10, exclude_domains: Optional[list[str]] = None,
-                     region: Optional[str] = None, save: bool = True) -> str:
+async def find_leads(
+    query: str,
+    target_leads: int = 10,
+    exclude_domains: list[str] | None = None,
+    region: str | None = None,
+    save: bool = True,
+) -> str:
     """Find companies for a query and collect their published contact details.
 
     Args:
@@ -54,26 +59,35 @@ async def find_leads(query: str, target_leads: int = 10, exclude_domains: Option
     """
     target = max(1, min(int(target_leads), 30))
     try:
-        found = await asyncio.to_thread(discover.search_companies, query, target * 4, exclude_domains or [])
+        found = await asyncio.to_thread(
+            discover.search_companies, query, target * 4, exclude_domains or []
+        )
     except Exception as exc:  # the search backend has its own exception types
         return _json({"error": f"Search failed: {exc}"})
     known = store().domains() if save else set()
     candidates = [c for c in found if c["domain"] not in known][: target * 2]
     crawled = await discover.crawl_many([c["domain"] for c in candidates], region)
     leads = []
-    for company, data in zip(candidates, crawled):
+    for company, data in zip(candidates, crawled, strict=False):
         if data.get("status") != "ok":
             continue
         leads.append({"company": company["company"], **data})
         if len(leads) >= target:
             break
     saved = store().add(leads, query) if save else []
-    return _json({"query": query, "count": len(leads), "saved_to_csv": len(saved),
-                  "csv": str(store().path) if save else None, "leads": leads,
-                  "skipped_known_domains": len([c for c in found if c["domain"] in known])})
+    return _json(
+        {
+            "query": query,
+            "count": len(leads),
+            "saved_to_csv": len(saved),
+            "csv": str(store().path) if save else None,
+            "leads": leads,
+            "skipped_known_domains": len([c for c in found if c["domain"] in known]),
+        }
+    )
 
 
-async def scrape_company(url_or_domain: str, region: Optional[str] = None) -> str:
+async def scrape_company(url_or_domain: str, region: str | None = None) -> str:
     """Crawl one company website (homepage + contact/about/imprint pages) for published contacts."""
     async with discover.http_client() as client:
         return _json(await discover.crawl_company(client, url_or_domain, region))
@@ -90,7 +104,7 @@ def decode_cloudflare_email(encoded: str) -> str:
 def list_leads(limit: int = 50) -> str:
     """Show the most recent rows of leads.csv."""
     rows = store().rows()
-    return _json({"csv": str(store().path), "total": len(rows), "rows": rows[-max(1, limit):]})
+    return _json({"csv": str(store().path), "total": len(rows), "rows": rows[-max(1, limit) :]})
 
 
 for _fn in (find_leads, scrape_company, decode_cloudflare_email, list_leads):

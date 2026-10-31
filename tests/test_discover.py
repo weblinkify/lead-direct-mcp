@@ -9,7 +9,7 @@ HOME = """<html><body><nav><a href="/en/contact-us">Contact</a><a href="https://
 <a href="/products">Products</a></nav><p>info@acme-trailers.fr</p>
 <a href="https://www.linkedin.com/company/acme-trailers">in</a></body></html>"""
 CONTACT = f"""<p>Sales: Marie Laurent, marie.laurent@acme-trailers.fr, +33 1 42 68 53 00</p>
-<span data-cfemail="{encode_cf_email('export@acme-trailers.fr')}"></span>"""
+<span data-cfemail="{encode_cf_email("export@acme-trailers.fr")}"></span>"""
 
 
 def test_is_ignored():
@@ -27,13 +27,21 @@ def test_internal_contact_links():
 
 @respx.mock
 async def test_crawl_company_collects_and_ranks():
-    respx.get(url__regex=r"^https://acme-trailers\.fr/?$").mock(return_value=httpx.Response(200, text=HOME, headers={"content-type": "text/html"}))
-    respx.get("https://acme-trailers.fr/en/contact-us").mock(return_value=httpx.Response(200, text=CONTACT, headers={"content-type": "text/html"}))
+    respx.get(url__regex=r"^https://acme-trailers\.fr/?$").mock(
+        return_value=httpx.Response(200, text=HOME, headers={"content-type": "text/html"})
+    )
+    respx.get("https://acme-trailers.fr/en/contact-us").mock(
+        return_value=httpx.Response(200, text=CONTACT, headers={"content-type": "text/html"})
+    )
     respx.route(host="acme-trailers.fr").mock(return_value=httpx.Response(404))
     async with discover.http_client() as client:
         lead = await discover.crawl_company(client, "www.acme-trailers.fr")
     assert lead["status"] == "ok"
-    assert lead["emails"] == ["marie.laurent@acme-trailers.fr", "export@acme-trailers.fr", "info@acme-trailers.fr"]
+    assert lead["emails"] == [
+        "marie.laurent@acme-trailers.fr",
+        "export@acme-trailers.fr",
+        "info@acme-trailers.fr",
+    ]
     assert lead["named_emails"] == ["marie.laurent@acme-trailers.fr"]
     assert lead["cloudflare_decoded"] == ["export@acme-trailers.fr"]
     assert lead["phones"] == ["+33 1 42 68 53 00"]
@@ -50,9 +58,18 @@ async def test_crawl_unreachable():
 
 def test_store_dedupes(tmp_path):
     s = LeadStore(tmp_path / "leads.csv")
-    lead = {"company": "Acme", "domain": "acme.fr", "emails": ["a@acme.fr", "b@acme.fr"], "phones": ["+33 1"],
-            "socials": {"linkedin": "li"}}
+    lead = {
+        "company": "Acme",
+        "domain": "acme.fr",
+        "emails": ["a@acme.fr", "b@acme.fr"],
+        "phones": ["+33 1"],
+        "socials": {"linkedin": "li"},
+    }
     assert len(s.add([lead, lead], "q")) == 1
     assert s.add([lead]) == []
     row = s.rows()[0]
-    assert row["email"] == "a@acme.fr" and row["other_emails"] == "b@acme.fr" and row["linkedin"] == "li"
+    assert (
+        row["email"] == "a@acme.fr"
+        and row["other_emails"] == "b@acme.fr"
+        and row["linkedin"] == "li"
+    )
