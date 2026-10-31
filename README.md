@@ -91,9 +91,9 @@ the demo are TypeScript ports of the server code and run for real. Paste any pag
 ## Development
 
 ```bash
-pip install -r requirements-dev.txt
-pytest -q
-cd frontend && npm test && npm run build
+make install   # dependencies and git hooks
+make check     # lint, types, tests and build: everything CI runs before merge
+make audit     # pip-audit and npm audit
 ```
 
 ## Responsible use
